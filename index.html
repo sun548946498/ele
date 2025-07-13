@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>饿了么廊坊万达站</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #f5f5f5;
+            font-family: 'Arial', sans-serif;
+            position: relative;
+            height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* 侧边栏按钮 */
+        .sidebar-toggle {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            z-index: 1002;
+            padding: 0;
+            border-radius: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 3px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .sidebar-toggle:hover {
+            transform: scale(1.05);
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        }
+        
+        .sidebar-toggle:active {
+            transform: scale(0.95);
+        }
+        
+        .sidebar-toggle:focus {
+            outline: 2px solid #007bff;
+            outline-offset: 2px;
+        }
+        
+        .sidebar-toggle span {
+            display: block;
+            width: 20px;
+            height: 2px;
+            background-color: #007bff;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 1px;
+        }
+        
+        .sidebar-toggle:hover span {
+            background-color: #0056b3;
+        }
+        
+        .sidebar-toggle.active:hover span {
+            background-color: #0056b3;
+        }
+        
+        .sidebar-toggle.active span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+            background-color: #007bff;
+        }
+        
+        .sidebar-toggle.active span:nth-child(2) {
+            opacity: 0;
+        }
+        
+        .sidebar-toggle.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(7px, -6px);
+            background-color: #007bff;
+        }
+        
+        /* 遮罩层 */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 998;
+            pointer-events: none;
+        }
+        
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: all;
+        }
+        
+        /* 侧边栏 - 修改为1/3屏宽度 */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -33vw;
+            width: 33vw;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            box-shadow: 4px 0 30px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            padding: 70px 15px 20px;
+            overflow-y: auto;
+        }
+        
+        .sidebar.open {
+            left: 0;
+        }
+        
+        .sidebar-header {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin: 0 15px 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(7, 123, 255, 0.2);
+            text-align: center;
+        }
+        
+        .sidebar-menu {
+            list-style: none;
+            padding: 0 5px;
+        }
+        
+        .sidebar-menu li {
+            margin-bottom: 10px;
+        }
+        
+        .sidebar-menu a {
+            display: block;
+            padding: 15px 18px;
+            color: #555;
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 14px;
+            position: relative;
+            overflow: hidden;
+            font-weight: 500;
+        }
+        
+        /* 移除背景效果 - 注释掉或删除以下样式 */
+        /*
+        .sidebar-menu a::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(7, 123, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+        */
+        
+        .sidebar-menu a:hover {
+            color: #007bff;
+            transform: translateX(8px);
+            /* 移除背景阴影效果 */
+            /* box-shadow: 0 2px 10px rgba(7, 123, 255, 0.1); */
+        }
+        
+        /* 移除悬停时的背景滑动效果 */
+        /*
+        .sidebar-menu a:hover::before {
+            left: 100%;
+        }
+        */
+        
+        .sidebar-menu a:active {
+            transform: translateX(5px) scale(0.98);
+        }
+        
+        .sidebar-menu a:focus {
+            outline: none;
+        }
+        
+        /* 图片容器 */
+        .image-container {
+            position: absolute;
+            top: -12px;
+            left: 47%;
+            transform: translateX(-50%);
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .centered-image {
+            width: 120px;
+            height: auto;
+            display: block;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.1));
+        }
+        
+        .centered-image:hover {
+            opacity: 0.9;
+            transform: scale(1.05);
+            filter: drop-shadow(0 6px 15px rgba(0, 0, 0, 0.15));
+        }
+        
+        .centered-image:active {
+            transform: scale(0.95);
+        }
+        
+        /* 内容区域 */
+        .content {
+            position: absolute;
+            top: 140px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 600px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            opacity: 0;
+            transition: all 0.5s ease;
+        }
+        
+        .content.show {
+            opacity: 1;
+        }
+        
+        .content h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+        
+        .content p {
+            color: #666;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+        
+        /* 加载动画 */
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }
+        
+        .loading.hide {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(7, 123, 255, 0.1);
+            border-left: 4px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 40vw;
+                left: -40vw;
+            }
+            
+            .sidebar-header {
+                font-size: 18px;
+            }
+            
+            .sidebar-menu a {
+                font-size: 13px;
+                padding: 14px 16px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 280px;
+                left: -280px;
+                padding: 70px 15px 20px;
+            }
+            
+            .sidebar-header {
+                font-size: 18px;
+                margin: 0 10px 25px;
+            }
+            
+            .sidebar-menu {
+                padding: 0 5px;
+            }
+            
+            .sidebar-menu li {
+                margin-bottom: 8px;
+            }
+            
+            .sidebar-menu a {
+                font-size: 14px;
+                padding: 14px 16px;
+            }
+            
+            .image-container {
+                margin: 10px;
+                padding: 15px;
+            }
+            
+            .centered-image {
+                max-width: 95vw;
+                max-height: 70vh;
+            }
+            
+            .sidebar-toggle {
+                top: 10px;
+                left: 10px;
+                width: 36px;
+                height: 36px;
+            }
+            
+            .sidebar-toggle span {
+                width: 18px;
+            }
+            
+            .content {
+                width: 95%;
+                padding: 20px;
+                top: 120px;
+            }
+            
+            .content h2 {
+                font-size: 20px;
+            }
+            
+            .content p {
+                font-size: 14px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .sidebar {
+                width: 260px;
+                left: -260px;
+            }
+            
+            .sidebar-header {
+                font-size: 16px;
+            }
+            
+            .sidebar-menu a {
+                font-size: 13px;
+                padding: 12px 14px;
+            }
+        }
+        
+        @media (max-width: 360px) {
+            .sidebar {
+                width: 240px;
+                left: -240px;
+            }
+        }
+        
+        /* 无障碍优化 */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+        
+        /* 高对比度模式 */
+        @media (prefers-contrast: high) {
+            .sidebar {
+                background: #fff;
+                border: 2px solid #000;
+            }
+            
+            .sidebar-menu a {
+                border: 1px solid transparent;
+            }
+            
+            .sidebar-menu a:hover,
+            .sidebar-menu a:focus {
+                border-color: #000;
+                background: #f0f0f0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 加载动画 -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+    
+    <!-- 侧边栏切换按钮 -->
+    <button class="sidebar-toggle" id="sidebarToggle" aria-label="切换菜单" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+    
+    <!-- 遮罩层 -->
+    <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
+    
+    <!-- 侧边栏 -->
+    <nav class="sidebar" id="sidebar" role="navigation" aria-label="主导航">
+        <div class="sidebar-header">饿了么廊坊万达站</div>
+        <ul class="sidebar-menu">
+            <li><a href="#home" data-section="home">🏠 首页</a></li>
+            <li><a href="#about" data-section="about">ℹ️ 关于我们</a></li>
+            <li><a href="#services" data-section="services">🍔 服务</a></li>
+            <li><a href="#contact" data-section="contact">📞 联系站长</a></li>
+            <li><a href="#help" data-section="help">❓ 帮助中心</a></li>
+        </ul>
+    </nav>
+    
+    <!-- Logo图片 -->
+    <div class="image-container" id="logoContainer" role="img" aria-label="饿了么Logo" tabindex="0">
+        <img src="https://i.postimg.cc/9fqFchDG/500px-Ele-me-logo-svg.png" alt="饿了么Logo" class="centered-image" id="logo">
+    </div>
+    
+    <!-- 动态内容区域 -->
+    <main class="content" id="content" role="main">
+        <h2 id="contentTitle">欢迎来到饿了么廊坊万达站</h2>
+        <p id="contentText">请选择左侧菜单查看更多内容。我们致力于为您提供最优质的外卖服务体验。</p>
+    </main>
+
+    <script>
+        class SidebarManager {
+            constructor() {
+                this.sidebar = document.getElementById('sidebar');
+                this.sidebarToggle = document.getElementById('sidebarToggle');
+                this.sidebarOverlay = document.getElementById('sidebarOverlay');
+                this.menuItems = document.querySelectorAll('.sidebar-menu a');
+                this.content = document.getElementById('content');
+                this.contentTitle = document.getElementById('contentTitle');
+                this.contentText = document.getElementById('contentText');
+                this.logo = document.getElementById('logoContainer');
+                this.loading = document.getElementById('loading');
+                
+                this.isOpen = false;
+                this.isAnimating = false;
+                
+                this.init();
+            }
+            
+            init() {
+                this.bindEvents();
+                this.loadContent();
+                
+                // 页面加载完成后显示内容
+                window.addEventListener('load', () => {
+                    setTimeout(() => {
+                        this.loading.classList.add('hide');
+                        this.content.classList.add('show');
+                    }, 500);
+                });
+            }
+            
+            bindEvents() {
+                // 防抖处理的切换函数
+                this.toggleSidebar = this.debounce(this.toggleSidebar.bind(this), 100);
+                
+                // 侧边栏切换按钮
+                this.sidebarToggle.addEventListener('click', this.toggleSidebar);
+                this.sidebarToggle.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.toggleSidebar();
+                    }
+                });
+                
+                // 遮罩层点击关闭
+                this.sidebarOverlay.addEventListener('click', () => this.closeSidebar());
+                
+                // 菜单项点击事件
+                this.menuItems.forEach(item => {
+                    item.addEventListener('click', (e) => this.handleMenuClick(e));
+                    item.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            this.handleMenuClick(e);
+                        }
+                    });
+                });
+                
+                // Logo点击事件
+                this.logo.addEventListener('click', () => this.handleLogoClick());
+                this.logo.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.handleLogoClick();
+                    }
+                });
+                
+                // 键盘事件
+                document.addEventListener('keydown', (e) => this.handleKeydown(e));
+                
+                // 触摸事件（移动端优化）
+                this.handleTouchEvents();
+                
+                // 窗口大小改变时的处理
+                window.addEventListener('resize', this.debounce(() => {
+                    if (window.innerWidth > 768 && this.isOpen) {
+                        this.closeSidebar();
+                    }
+                }, 250));
+            }
+            
+            toggleSidebar() {
+                if (this.isAnimating) return;
+                
+                this.isOpen ? this.closeSidebar() : this.openSidebar();
+            }
+            
+            openSidebar() {
+                if (this.isAnimating || this.isOpen) return;
+                
+                this.isAnimating = true;
+                this.isOpen = true;
+                
+                this.sidebar.classList.add('open');
+                this.sidebarOverlay.classList.add('active');
+                this.sidebarToggle.classList.add('active');
+                this.sidebarToggle.setAttribute('aria-expanded', 'true');
+                this.sidebarOverlay.setAttribute('aria-hidden', 'false');
+                
+                // 聚焦到第一个菜单项
+                setTimeout(() => {
+                    this.menuItems[0]?.focus();
+                    this.isAnimating = false;
+                }, 300);
+            }
+            
+            closeSidebar() {
+                if (this.isAnimating || !this.isOpen) return;
+                
+                this.isAnimating = true;
+                this.isOpen = false;
+                
+                this.sidebar.classList.remove('open');
+                this.sidebarOverlay.classList.remove('active');
+                this.sidebarToggle.classList.remove('active');
+                this.sidebarToggle.setAttribute('aria-expanded', 'false');
+                this.sidebarOverlay.setAttribute('aria-hidden', 'true');
+                
+                setTimeout(() => {
+                    this.isAnimating = false;
+                }, 300);
+            }
+            
+            handleMenuClick(e) {
+                e.preventDefault();
+                const section = e.target.getAttribute('data-section');
+                
+                // 添加点击反馈
+                e.target.style.transform = 'translateX(5px) scale(0.98)';
+                setTimeout(() => {
+                    e.target.style.transform = '';
+                }, 150);
+                
+                this.loadSectionContent(section);
+                
+                // 移动端自动关闭侧边栏
+                if (window.innerWidth <= 768) {
+                    setTimeout(() => this.closeSidebar(), 300);
+                }
+            }
+            
+            handleLogoClick() {
+                // Logo点击动画效果
+                this.logo.style.transform = 'translateX(-50%) scale(0.95)';
+                setTimeout(() => {
+                    this.logo.style.transform = 'translateX(-50%) scale(1)';
+                }, 150);
+                
+                this.loadSectionContent('home');
+                this.closeSidebar();
+            }
+            
+            handleKeydown(e) {
+                switch(e.key) {
+                    case 'Escape':
+                        if (this.isOpen) {
+                            this.closeSidebar();
+                            this.sidebarToggle.focus();
+                        }
+                        break;
+                    case 'Tab':
+                        if (this.isOpen) {
+                            this.handleTabNavigation(e);
+                        }
+                        break;
+                    case 'ArrowUp':
+                    case 'ArrowDown':
+                        if (this.isOpen && document.activeElement.closest('.sidebar-menu')) {
+                            e.preventDefault();
+                            this.navigateMenu(e.key === 'ArrowUp' ? -1 : 1);
+                        }
+                        break;
+                }
+            }
+            
+            handleTabNavigation(e) {
+                const focusableElements = this.sidebar.querySelectorAll('a[href]');
+                const firstElement = focusableElements[0];
+                const lastElement = focusableElements[focusableElements.length - 1];
+                
+                if (e.shiftKey && document.activeElement === firstElement) {
+                    e.preventDefault();
+                    lastElement.focus();
+                } else if (!e.shiftKey && document.activeElement === lastElement) {
+                    e.preventDefault();
+                    firstElement.focus();
+                }
+            }
+            
+            navigateMenu(direction) {
+                const currentIndex = Array.from(this.menuItems).indexOf(document.activeElement);
+                if (currentIndex === -1) return;
+                
+                const nextIndex = Math.max(0, Math.min(this.menuItems.length - 1, currentIndex + direction));
+                this.menuItems[nextIndex].focus();
+            }
+            
+            handleTouchEvents() {
+                let startX = 0;
+                let currentX = 0;
+                let isDragging = false;
+                
+                document.addEventListener('touchstart', (e) => {
+                    startX = e.touches[0].clientX;
+                    isDragging = true;
+                }, { passive: true });
+                
+                document.addEventListener('touchmove', (e) => {
+                    if (!isDragging) return;
+                    currentX = e.touches[0].clientX;
+                }, { passive: true });
+                
+                document.addEventListener('touchend', () => {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    
+                    const deltaX = currentX - startX;
+                    
+                    // 向右滑动打开侧边栏
+                    if (deltaX > 50 && startX < 50 && !this.isOpen) {
+                        this.openSidebar();
+                    }
+                    // 向左滑动关闭侧边栏
+                    else if (deltaX < -50 && this.isOpen) {
+                        this.closeSidebar();
+                    }
+                }, { passive: true });
+            }
+            
+            loadSectionContent(section) {
+                const contentMap = {
+                    home: {
+                        title: '欢迎来到饿了么廊坊万达站',
+                        text: '我们是廊坊万达地区最专业的外卖服务站点，致力于为您提供快速、便捷、美味的外卖体验。'
+                    },
+                    about: {
+                        title: '关于我们',
+                        text: '饿了么廊坊万达站成立于2020年，服务范围覆盖万达广场及周边3公里区域，拥有专业的配送团队和优质的合作商家。'
+                    },
+                    services: {
+                        title: '我们的服务',
+                        text: '提供24小时外卖配送服务，包括美食外卖、生鲜配送、药品代购等多元化服务，平均配送时间30分钟内。'
+                    },
+                    contact: {
+                        title: '联系站长',
+                        text: '如有任何问题或建议，请联系我们：电话 400-123-4567，微信客服 eleme_wanda，工作时间 9:00-21:00。'
+                    },
+                    help: {
+                        title: '帮助中心',
+                        text: '常见问题解答、配送政策说明、投诉建议处理等服务支持。如需更多帮助，请访问饿了么官方网站或联系客服。'
+                    }
+                };
+                
+                const content = contentMap[section] || contentMap.home;
+                
+                // 添加过渡动画
+                this.content.style.opacity = '0';
+                this.content.style.transform = 'translateX(-50%) translateY(20px)';
+                
+                setTimeout(() => {
+                    this.contentTitle.textContent = content.title;
+                    this.contentText.textContent = content.text;
+                    
+                    this.content.style.opacity = '1';
+                    this.content.style.transform = 'translateX(-50%) translateY(0)';
+                }, 200);
+            }
+            
+            loadContent() {
+                // 初始化内容
+                this.loadSectionContent('home');
+            }
+            
+            // 防抖函数
+            debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            new SidebarManager();
+        });
+        
+        // 性能监控和错误处理
+        window.addEventListener('error', (e) => {
+            console.error('页面错误:', e.error);
+        });
+        
+        // 添加页面可见性API支持
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                // 页面变为可见时的处理
+                console.log('页面已激活');
+            }
+        });
+    </script>
+</body>
+</html>
